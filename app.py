@@ -12,7 +12,7 @@ class App(object):
     """
     def __init__(self): 
         self.storage_manager = FileStorageManager("./storage")
-        self.list_manager = ListManager(self.storage_manager)
+        self.list_manager = ListManager(self.storage_manager.load_lists())
         self.task_map = self.storage_manager.load_tasks(self.list_manager)
 
         self.EXIT_CMDS = ["quit", "exit", "q"]
@@ -74,8 +74,54 @@ class App(object):
 
             # view all of the existing tasks        
             elif cmd == "view":
-                for v in self.task_map.values(): 
-                    print(v)
+                # if the user did not specify a particular list, then show all
+                # tasks
+                if len(tokens) == 1: 
+                    for v in self.task_map.values(): 
+                        print(v)
+                        
+                # otherwise, only show the tasks in that list
+                else: 
+                    sublist = filter(
+                        lambda task: task.list in tokens[1:], 
+                        self.task_map.values()
+                    )
+                    for v in sublist: 
+                        print(v)
+
+            # add task lists
+            elif cmd == "newlist": 
+                for list_name in tokens[1:]:
+                    if self.list_manager.add(list_name):
+                        self.storage_manager.add_list(list_name)
+                    else: 
+                        print("List {} already exists".format(list_name))
+
+            # remove task lists
+            elif cmd == "removelist":
+                for list_name in tokens[1:]:
+                    # make sure user is not deleting tasks list
+                    if list_name == "tasks":
+                        print("You cannot delete the tasks list")
+
+                    # try to remove the list name
+                    elif self.list_manager.remove(list_name):
+                        # if the list name was removed, remove tasks from task 
+                        # map
+                        tasks_to_remove = []
+                        for task_id in self.task_map.keys(): 
+                            task = self.task_map[task_id]
+                            if task.list == list_name: 
+                                tasks_to_remove.append(task_id)
+                        for task_id in tasks_to_remove: 
+                            del self.task_map[task_id]
+
+                        # remove list from storage
+                        self.storage_manager.remove_list(list_name)
+
+                    # otherwise, notify the user that the list doesn't exist
+                    else: 
+                        print("List {} does not exist".format(list_name))
 
             # exit the task planner application
             elif cmd in self.EXIT_CMDS: 
@@ -147,7 +193,8 @@ class App(object):
             lst = self.list_manager.get_default_list()
         # otherwise, validate the list
         elif not self.list_manager.validate(lst): 
-            raise TypeError
+            print("Invalid list name specified. Task creation failed.")
+            return
 
         # create the task
         new_task = Task(

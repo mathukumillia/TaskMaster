@@ -76,29 +76,41 @@ class FileStorageManager(StorageManager):
         """
         Adds a list to the stored list of lists.
         """
-        with open(self.list_file, "w+") as f: 
+        with open(self.list_file, "a") as f: 
             f.write(lst + "\n")
 
     def remove_list(self, lst): 
         """
-        Removes a list from the stored list of lists.
+        Removes a list from the stored list of lists, and then removes all 
+        tasks associated with this list.
         """
+        # remove list
         lines = None
-        with open(self.list_file, "w+") as f: 
+        with open(self.list_file, "r") as f: 
             lines = f.readlines()
         with open(self.list_file, "w") as f: 
             for line in lines: 
                 if line.strip() != lst: 
                     f.write(line)
 
+        # remove associated tasks
+        lines = None 
+        with open(self.task_file, "r") as f: 
+            lines = f.readlines()
+        with open(self.task_file, "w") as f: 
+            for line in lines: 
+                elements = line.split("\t")
+                if elements[4] != lst: 
+                    f.write(line)
+
 
     def load_lists(self):
         """
-        Loads the list of lists into the application. This list should 
+        Loads the set of list names into the application. This list should 
         always include a default "tasks" list.
         """
         with open(self.list_file, "r") as f: 
-            return [line.strip() for line in f.readlines()]
+            return set([line.strip() for line in f.readlines()])
 
     def load_tasks(self, list_manager): 
         """
