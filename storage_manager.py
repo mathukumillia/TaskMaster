@@ -6,22 +6,22 @@ class StorageManager(object):
     An abstract class describing what a storage manager must be able to support. 
     Should not be instantiated.
     """
-    def add_category(self, category): 
+    def add_list(self, lst): 
         """
-        Adds a category to the stored list of categories.
-        """
-        raise NotImplementedError
-
-    def remove_category(self, category): 
-        """
-        Removes a category from the stored list of categories.
+        Adds a list to the stored list of lists.
         """
         raise NotImplementedError
 
-    def load_categories(self):
+    def remove_list(self, lst): 
         """
-        Loads the list of categories into the application. This list should 
-        always include a default "tasks" category.
+        Removes a list from the stored list of lists.
+        """
+        raise NotImplementedError
+
+    def load_lists(self):
+        """
+        Loads the list of lists into the application. This list should 
+        always include a default "tasks" list.
         """
         raise NotImplementedError 
 
@@ -57,14 +57,14 @@ class FileStorageManager(StorageManager):
     """
     def __init__(self, root): 
         self.root = root
-        self.category_file = self.root + "/categories.txt"
+        self.list_file = self.root + "/lists.txt"
         self.task_file = self.root + "/tasks.txt"
         self.num_tasks = 0
 
         # create all of the necessary storage files if they don't exist
-        # category file
-        if not os.path.exists(self.category_file): 
-            with open(self.category_file, "w") as f:
+        # list file
+        if not os.path.exists(self.list_file): 
+            with open(self.list_file, "w") as f:
                 f.write("tasks\n");
 
         # task file
@@ -72,35 +72,35 @@ class FileStorageManager(StorageManager):
             with open(self.task_file, "w") as f: 
                 pass
 
-    def add_category(self, category): 
+    def add_list(self, lst): 
         """
-        Adds a category to the stored list of categories.
+        Adds a list to the stored list of lists.
         """
-        with open(self.category_file, "w+") as f: 
-            f.write(category + "\n")
+        with open(self.list_file, "w+") as f: 
+            f.write(lst + "\n")
 
-    def remove_category(self, category): 
+    def remove_list(self, lst): 
         """
-        Removes a category from the stored list of categories.
+        Removes a list from the stored list of lists.
         """
         lines = None
-        with open(self.category_file, "w+") as f: 
+        with open(self.list_file, "w+") as f: 
             lines = f.readlines()
-        with open(self.category_file, "w") as f: 
+        with open(self.list_file, "w") as f: 
             for line in lines: 
-                if line.strip() != category: 
+                if line.strip() != lst: 
                     f.write(line)
 
 
-    def load_categories(self):
+    def load_lists(self):
         """
-        Loads the list of categories into the application. This list should 
-        always include a default "tasks" category.
+        Loads the list of lists into the application. This list should 
+        always include a default "tasks" list.
         """
-        with open(self.category_file, "r") as f: 
+        with open(self.list_file, "r") as f: 
             return [line.strip() for line in f.readlines()]
 
-    def load_tasks(self, category_manager): 
+    def load_tasks(self, list_manager): 
         """
         Loads all of the uncompleted tasks into the application as a map of 
         task ids to tasks
@@ -109,10 +109,15 @@ class FileStorageManager(StorageManager):
         with open(self.task_file, "r") as f: 
             for line in f: 
                 elements = line.split("\t")
-                if bool(elements[5]):
-                    task_map[int(elements[0])] = Task(elements[1], elements[2], elements[3], elements[4],
-                        category_manager, self, store=False, task_id=int(elements[0]))
-                if int(elements[0]) > self.num_tasks:
+                if elements[5].strip() == "False":
+                    task_map[int(elements[0])] = Task(
+                        elements[0],
+                        elements[1], 
+                        elements[2], 
+                        elements[3], 
+                        elements[4]
+                    )
+                if int(elements[0]) >= self.num_tasks:
                     self.num_tasks = int(elements[0]) + 1
         return task_map
 
