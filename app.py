@@ -29,6 +29,7 @@ class App(object):
             tokens = self.tokenize_input(input_string) 
             cmd = tokens[0].lower()
 
+            # creates a new task
             if cmd == "new": 
                 # ensure we have the right number of arguments
                 if len(tokens) < 4 or len(tokens) > 5:
@@ -57,18 +58,30 @@ class App(object):
                     lst = tokens[4]
 
                 self.add_task(description, date, time, lst)
+
+            # removes tasks by ids
             elif cmd == "remove":
-                if len(tokens) != 2: 
-                    print("Invalid remove command. The command takes the" + 
-                        " form: \n remove id")
-                    continue 
-                task_id = int(tokens[1])  
-                self.remove_task(task_id)
+                for token in tokens[1:]:
+                    task_id = None 
+                    try: 
+                        task_id = int(token)
+                    except ValueError as e: 
+                        print("{} is not a numeric id".format(token))
+                        continue
+
+                    if not self.remove_task(task_id):
+                        print("Task {} does not exist".format(task_id))
+
+            # view all of the existing tasks        
             elif cmd == "view":
                 for v in self.task_map.values(): 
                     print(v)
+
+            # exit the task planner application
             elif cmd in self.EXIT_CMDS: 
                 return
+
+            # an invalid command was entered
             else: 
                 print("Command not recognized!")
 
@@ -152,8 +165,11 @@ class App(object):
         self.task_map[new_task.get_id()] = new_task
 
     def remove_task(self, task_id): 
+        if task_id not in self.task_map.keys(): 
+            return False
         del self.task_map[task_id] 
         self.storage_manager.remove_task(task_id)
+        return True
 
     def mark_task_completed(self, task_id): 
         self.task_map[task_id].mark_completed()
