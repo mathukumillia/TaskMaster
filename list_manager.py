@@ -19,7 +19,3 @@ class ListManager(object):
 
     def validate(self, lst):
         return lst in self.list_set
-
-    def get_default_list(self): 
-        return "tasks"
-

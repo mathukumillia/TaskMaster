@@ -20,8 +20,7 @@ class StorageManager(object):
 
     def load_lists(self):
         """
-        Loads the list of lists into the application. This list should 
-        always include a default "tasks" list.
+        Loads the list of lists into the application. 
         """
         raise NotImplementedError 
 
@@ -106,8 +105,7 @@ class FileStorageManager(StorageManager):
 
     def load_lists(self):
         """
-        Loads the set of list names into the application. This list should 
-        always include a default "tasks" list.
+        Loads the set of list names into the application. 
         """
         with open(self.list_file, "r") as f: 
             return set([line.strip() for line in f.readlines()])

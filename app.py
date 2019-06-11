@@ -32,9 +32,9 @@ class App(object):
             # creates a new task
             if cmd == "new": 
                 # ensure we have the right number of arguments
-                if len(tokens) < 4 or len(tokens) > 5:
+                if len(tokens) != 5:
                     print("Invalid new command. The command takes the form: \n " 
-                        + "new \"description\" date time [list]")
+                        + "new \"description\" date time list")
                     continue 
 
                 # the first token is always the description  
@@ -52,10 +52,8 @@ class App(object):
                     print("Invalid time. Enter the time in 24 hour format")
                     continue
 
-                # retrieve the list if the user supplied one
-                lst = None
-                if len(tokens) == 5:
-                    lst = tokens[4]
+                # retrieve the list this task belongs to
+                lst = tokens[4]
 
                 self.add_task(description, date, time, lst)
 
@@ -100,12 +98,8 @@ class App(object):
             # remove task lists
             elif cmd == "removelist":
                 for list_name in tokens[1:]:
-                    # make sure user is not deleting tasks list
-                    if list_name == "tasks":
-                        print("You cannot delete the tasks list")
-
                     # try to remove the list name
-                    elif self.list_manager.remove(list_name):
+                    if self.list_manager.remove(list_name):
                         # if the list name was removed, remove tasks from task 
                         # map
                         tasks_to_remove = []
@@ -188,11 +182,8 @@ class App(object):
         return tokens
 
     def add_task(self, description, date, time, lst):
-        # if the list is none, set it to the default list 
-        if not lst: 
-            lst = self.list_manager.get_default_list()
-        # otherwise, validate the list
-        elif not self.list_manager.validate(lst): 
+        # validate the list
+        if not self.list_manager.validate(lst): 
             print("Invalid list name specified. Task creation failed.")
             return
 
