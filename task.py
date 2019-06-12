@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 class Task(object): 
     """
@@ -21,19 +21,27 @@ class Task(object):
     def mark_completed(self): 
         self.completed = True
 
+    def get_list(self): 
+        return self.list
+
     def __str__(self): 
         return (str(self.id) + "\t" + self.description + "\t" + str(self.date) + "\t" +
-            str(self.time) + "\t" + self.list + "\t" + str(self.completed) + "\n")
+            str(self.time) + "\t" + str(self.list) + "\t" + str(self.completed) + "\n")
 
     def __eq__(self, other):
-        return (self.date == other.time) and (self.time == other.time) 
+        return (
+            (self.date == other.time) and 
+            (self.time == other.time) and 
+            (self.list.get_priority() == other.get_priority())
+        ) 
 
     def __lt__(self, other): 
-        if self.date < other.date:
+        mytime = datetime.combine(self.date, self.time)
+        othertime = datetime.combine(self.date, self.time)
+
+        myweight = (mytime - datetime.today()).total_seconds()/self.list.get_priority()
+        otherweight = (othertime - datetime.today()).total_seconds()/other.list.get_priority()
+
+        if myweight < otherweight: 
             return True
-        elif self.date == other.date: 
-            if self.time < other.time: 
-                return True
-            else: 
-                return False 
         return False

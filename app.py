@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from storage_manager import FileStorageManager
-from list_manager import ListManager 
+from list_manager import ListManager, List
 from task import Task 
 from sys import stdin
 from datetime import date, time
@@ -85,7 +85,7 @@ class App(object):
                 # otherwise, only show the tasks in that list
                 else: 
                     sublist = filter(
-                        lambda task: task.list in tokens[1:], 
+                        lambda task: task.get_list().get_name() in tokens[1:], 
                         self.task_map.values()
                     )
                     for v in sublist: 
@@ -102,7 +102,7 @@ class App(object):
                 # otherwise, only show the tasks in that list
                 else: 
                     sublist = filter(
-                        lambda task: task.list in tokens[1:], 
+                        lambda task: task.get_list().get_name() in tokens[1:], 
                         self.open_task_map.values() 
                     )
                     for v in sublist: 
@@ -110,11 +110,28 @@ class App(object):
 
             # add task lists
             elif cmd == "newlist": 
-                for list_name in tokens[1:]:
-                    if self.list_manager.add(list_name):
-                        self.storage_manager.add_list(list_name)
-                    else: 
-                        print("List {} already exists".format(list_name))
+                # ensure that we got the name of a list and its priority
+                if len(tokens) != 3: 
+                    print("Usage: newlist list_name list_priority")
+                    continue
+
+                # try to convert the priority to a number
+                list_priority = None
+                try: 
+                    list_priority = int(tokens[2])
+                except ValueError as e: 
+                    print("Priority must be an integer.")
+                    continue 
+
+                # create the list object that represents this 
+                task_list = List(tokens[1], list_priority)
+
+                # try to create the list by adding it to the list manager
+                if self.list_manager.add(task_list):
+                    # if that works, persist the list to storage
+                    self.storage_manager.add_list(task_list)
+                else: 
+                    print("List {} already exists".format(task_list.get_name()))
 
             # remove task lists
             elif cmd == "removelist":
@@ -126,7 +143,7 @@ class App(object):
                         tasks_to_remove = []
                         for task_id in self.task_map.keys(): 
                             task = self.task_map[task_id]
-                            if task.list == list_name: 
+                            if task.get_list().get_name() == list_name: 
                                 tasks_to_remove.append(task_id)
                         for task_id in tasks_to_remove: 
                             del self.task_map[task_id]
@@ -249,7 +266,7 @@ class App(object):
             description, 
             date, 
             time, 
-            lst, 
+            self.list_manager.get_lst(lst), 
         )
 
         # add the task to storage

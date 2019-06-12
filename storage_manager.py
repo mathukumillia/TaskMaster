@@ -1,5 +1,7 @@
 import os.path
 from task import Task
+from list_manager import List
+from datetime import date, time
 
 class StorageManager(object): 
     """
@@ -20,7 +22,7 @@ class StorageManager(object):
 
     def load_lists(self):
         """
-        Loads the list of lists into the application. 
+        Loads the map of list names to lists into the application. 
         """
         raise NotImplementedError 
 
@@ -76,7 +78,7 @@ class FileStorageManager(StorageManager):
         Adds a list to the stored list of lists.
         """
         with open(self.list_file, "a") as f: 
-            f.write(lst + "\n")
+            f.write(lst.get_name() + "\t" + str(lst.get_priority()) + "\n")
 
     def remove_list(self, lst): 
         """
@@ -89,7 +91,8 @@ class FileStorageManager(StorageManager):
             lines = f.readlines()
         with open(self.list_file, "w") as f: 
             for line in lines: 
-                if line.strip() != lst: 
+                elements = line.strip().split("\t")
+                if elements[0] != lst.get_name():
                     f.write(line)
 
         # remove associated tasks
@@ -105,10 +108,14 @@ class FileStorageManager(StorageManager):
 
     def load_lists(self):
         """
-        Loads the set of list names into the application. 
+        Loads the map of list names to lists into the application. 
         """
+        list_map = {}
         with open(self.list_file, "r") as f: 
-            return set([line.strip() for line in f.readlines()])
+            for line in f: 
+                elements = line.strip().split("\t")
+                list_map[elements[0]] = List(elements[0], int(elements[1]))
+        return list_map
 
     def load_tasks(self, list_manager): 
         """
@@ -119,12 +126,16 @@ class FileStorageManager(StorageManager):
         with open(self.task_file, "r") as f: 
             for line in f: 
                 elements = line.split("\t")
+
+                # create the date object
+                date_elems = [int(elem) for elem in elements[2].split("-")]
+                time_elems = [int(elem) for elem in elements[3].split(":")]
                 task_map[int(elements[0])] = Task(
                     elements[0],
                     elements[1], 
-                    elements[2], 
-                    elements[3], 
-                    elements[4],
+                    date(date_elems[0], date_elems[1], date_elems[2]),
+                    time(time_elems[0], time_elems[1], time_elems[2]),
+                    list_manager.get_lst(elements[4]),
                 )
                 if elements[5].strip() == "True":
                     task_map[int(elements[0])].mark_completed()
