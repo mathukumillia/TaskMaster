@@ -26,8 +26,8 @@ class StorageManager(object):
 
     def load_tasks(self): 
         """
-        Loads all of the uncompleted tasks into the application as a map of 
-        task ids to tasks
+        Loads all of the tasks into the application as a map of task ids to 
+        tasks
         """
         raise NotImplementedError
 
@@ -112,21 +112,22 @@ class FileStorageManager(StorageManager):
 
     def load_tasks(self, list_manager): 
         """
-        Loads all of the uncompleted tasks into the application as a map of 
-        task ids to tasks
+        Loads all of the tasks into the application as a map of task ids to 
+        tasks
         """
         task_map = {}
         with open(self.task_file, "r") as f: 
             for line in f: 
                 elements = line.split("\t")
-                if elements[5].strip() == "False":
-                    task_map[int(elements[0])] = Task(
-                        elements[0],
-                        elements[1], 
-                        elements[2], 
-                        elements[3], 
-                        elements[4]
-                    )
+                task_map[int(elements[0])] = Task(
+                    elements[0],
+                    elements[1], 
+                    elements[2], 
+                    elements[3], 
+                    elements[4],
+                )
+                if elements[5] == "True":
+                    task_map[int(elements[0])].mark_completed()
                 if int(elements[0]) >= self.num_tasks:
                     self.num_tasks = int(elements[0]) + 1
         return task_map
@@ -145,7 +146,7 @@ class FileStorageManager(StorageManager):
         Marks a task as completed in storage.
         """
         lines = None
-        with open(self.task_file, "w+") as f: 
+        with open(self.task_file, "r") as f: 
             lines = f.readlines()
         with open(self.task_file, "w") as f: 
             for line in lines: 
@@ -153,7 +154,7 @@ class FileStorageManager(StorageManager):
                 if int(elements[0]) != task_id: 
                     f.write(line)
                 else: 
-                    f.write("\t".join(elements[:6]) + "\t" + str(True))
+                    f.write("\t".join(elements[:5]) + "\t" + str(True))
 
     def remove_task(self, task_id): 
         """

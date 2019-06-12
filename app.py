@@ -71,7 +71,7 @@ class App(object):
                         print("Task {} does not exist".format(task_id))
 
             # view all of the existing tasks        
-            elif cmd == "view":
+            elif cmd == "viewall":
                 # if the user did not specify a particular list, then show all
                 # tasks
                 if len(tokens) == 1: 
@@ -83,6 +83,27 @@ class App(object):
                     sublist = filter(
                         lambda task: task.list in tokens[1:], 
                         self.task_map.values()
+                    )
+                    for v in sublist: 
+                        print(v)
+
+            # view all unfinished tasks
+            elif cmd == "viewopen": 
+                unfinished_tasks = filter(
+                    lambda task: not task.completed,
+                    self.task_map.values()
+                )
+                # if the user did not specify a particular list, then show all
+                # tasks
+                if len(tokens) == 1: 
+                    for v in unfinished_tasks: 
+                        print(v)
+                        
+                # otherwise, only show the tasks in that list
+                else: 
+                    sublist = filter(
+                        lambda task: task.list in tokens[1:], 
+                        unfinished_tasks 
                     )
                     for v in sublist: 
                         print(v)
@@ -116,6 +137,32 @@ class App(object):
                     # otherwise, notify the user that the list doesn't exist
                     else: 
                         print("List {} does not exist".format(list_name))
+
+            # generate and view the priority list 
+            elif cmd == "prioritize":
+                # sort the tasklist by closest deadline 
+                tasklist = self.task_map.values()
+                pass
+
+            # complete tasks
+            elif cmd == "complete":
+                # complete each task the user wishes to complete 
+                for token in tokens[1:]:
+                    task_id = None 
+                    try: 
+                        task_id = int(token)
+                    except ValueError as e: 
+                        print("{} is not a numeric id".format(token))
+                        continue
+                    # if the task id does not correspond to a valid task, 
+                    # report that to the user
+                    if task_id not in self.task_map.keys(): 
+                        print("Task {} is not a valid task.".format(task_id))
+                    # otherwise, mark the task as completed
+                    else: 
+                        self.task_map[task_id].mark_completed()
+                        self.storage_manager.mark_task_completed(task_id)
+
 
             # exit the task planner application
             elif cmd in self.EXIT_CMDS: 
