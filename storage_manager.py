@@ -126,7 +126,7 @@ class FileStorageManager(StorageManager):
                     elements[3], 
                     elements[4],
                 )
-                if elements[5] == "True":
+                if elements[5].strip() == "True":
                     task_map[int(elements[0])].mark_completed()
                 if int(elements[0]) >= self.num_tasks:
                     self.num_tasks = int(elements[0]) + 1
@@ -154,7 +154,7 @@ class FileStorageManager(StorageManager):
                 if int(elements[0]) != task_id: 
                     f.write(line)
                 else: 
-                    f.write("\t".join(elements[:5]) + "\t" + str(True))
+                    f.write("\t".join(elements[:5]) + "\t" + str(True) + "\n")
 
     def remove_task(self, task_id): 
         """

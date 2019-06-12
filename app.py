@@ -14,6 +14,10 @@ class App(object):
         self.storage_manager = FileStorageManager("./storage")
         self.list_manager = ListManager(self.storage_manager.load_lists())
         self.task_map = self.storage_manager.load_tasks(self.list_manager)
+        self.open_task_map = {}
+        for task_id, task in self.task_map.items(): 
+            if not task.completed: 
+                self.open_task_map[task_id] = task
 
         self.EXIT_CMDS = ["quit", "exit", "q"]
 
@@ -89,21 +93,17 @@ class App(object):
 
             # view all unfinished tasks
             elif cmd == "viewopen": 
-                unfinished_tasks = filter(
-                    lambda task: not task.completed,
-                    self.task_map.values()
-                )
                 # if the user did not specify a particular list, then show all
                 # tasks
                 if len(tokens) == 1: 
-                    for v in unfinished_tasks: 
+                    for v in self.open_task_map.values(): 
                         print(v)
                         
                 # otherwise, only show the tasks in that list
                 else: 
                     sublist = filter(
                         lambda task: task.list in tokens[1:], 
-                        unfinished_tasks 
+                        self.open_task_map.values() 
                     )
                     for v in sublist: 
                         print(v)
@@ -130,6 +130,8 @@ class App(object):
                                 tasks_to_remove.append(task_id)
                         for task_id in tasks_to_remove: 
                             del self.task_map[task_id]
+                            if task_id in self.open_task_map.keys(): 
+                                del self.open_task_map[task_id]
 
                         # remove list from storage
                         self.storage_manager.remove_list(list_name)
@@ -142,7 +144,6 @@ class App(object):
             elif cmd == "prioritize":
                 # sort the tasklist by closest deadline 
                 tasklist = self.task_map.values()
-                pass
 
             # complete tasks
             elif cmd == "complete":
@@ -158,9 +159,14 @@ class App(object):
                     # report that to the user
                     if task_id not in self.task_map.keys(): 
                         print("Task {} is not a valid task.".format(task_id))
+                    # if the task id has already been completed, tell user 
+                    elif task_id not in self.open_task_map.keys(): 
+                        print("Task {} has already been completed.".format(
+                            task_id))
                     # otherwise, mark the task as completed
                     else: 
                         self.task_map[task_id].mark_completed()
+                        del self.open_task_map[task_id]
                         self.storage_manager.mark_task_completed(task_id)
 
 
@@ -248,11 +254,14 @@ class App(object):
 
         # storing task gives it a unique id that we can use to add to map
         self.task_map[new_task.get_id()] = new_task
-
+        self.open_task_map[new_task.get_id()] = new_task
+ 
     def remove_task(self, task_id): 
         if task_id not in self.task_map.keys(): 
             return False
         del self.task_map[task_id] 
+        if task_id in self.open_task_map.keys(): 
+            del self.open_task_map[task_id]
         self.storage_manager.remove_task(task_id)
         return True
 
