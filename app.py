@@ -142,8 +142,11 @@ class App(object):
 
             # generate and view the priority list 
             elif cmd == "prioritize":
-                # sort the tasklist by closest deadline 
-                tasklist = self.task_map.values()
+                # sort the uncompleted tasklist by closest deadline 
+                tasklist = sorted(self.open_task_map.values())
+                # print out the sorted tasks
+                for task in tasklist: 
+                    print(task)
 
             # complete tasks
             elif cmd == "complete":
