@@ -10,6 +10,13 @@ class DBStorageManager(object):
         self.conn = sqlite3.connect("taskplanner.db")
         self.cursor = self.conn.cursor()
 
+        # enable foreign keys
+        self.cursor.execute(
+            """
+            PRAGMA foreign_keys = ON;
+            """
+        )
+
         # create tables if they don't exist
         existing_tables = self.cursor.execute(
             """
@@ -92,12 +99,12 @@ class DBStorageManager(object):
     def prioritize(self):
         pass
 
-    def viewtasks(self): 
-        tasks = self.cursor.execute(
-            """
-            SELECT * FROM tasks WHERE completed = 0
-            """
-        )
+    def viewtasks(self, list_name=None): 
+        query = """ SELECT description, date, time, list_name 
+                    FROM tasks where completed = 0 """
+        if list_name is not None: 
+            query += "&& list_name = {}".format(list_name)
+        tasks = self.cursor.execute(query)
         return list(tasks)
 
     def viewalltasks(self): 
