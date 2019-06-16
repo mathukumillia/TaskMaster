@@ -49,25 +49,32 @@ class DBStorageManager(object):
                 """
             )
 
-    def add_task(self, description, date, time, list_name): 
-        self.cursor.execute(
-            """
-            INSERT INTO tasks (description, date, time, list_name, completed)
-            VALUES (?, ?, ?, ?, 0)
-            """,
-            (description, date, time, list_name)
-        )
-        self.conn.commit()
+    def create_task(self, description, date, time, list_name): 
+        try: 
+            self.cursor.execute(
+                """
+                INSERT INTO tasks (description, date, time, list_name, completed)
+                VALUES (?, ?, ?, ?, 0)
+                """,
+                (description, date, time, list_name)
+            )
+            self.conn.commit()
+        except sqlite3.IntegrityError as e: 
+            print("Task creation failed: {} is not a valid list".format(
+                list_name))
 
     def create_list(self, name, priority): 
-        self.cursor.execute(
-            """
-            INSERT INTO lists (name, priority)
-            VALUES (?, ?)
-            """,
-            (name, priority)
-        )
-        self.conn.commit()
+        try: 
+            self.cursor.execute(
+                """
+                INSERT INTO lists (name, priority)
+                VALUES (?, ?)
+                """,
+                (name, priority)
+            )
+            self.conn.commit()
+        except sqlite3.IntegrityError as e: 
+            print("A list with the name {} already exists".format(name))
 
     def del_task(self, task_id): 
         self.cursor.execute(
@@ -79,6 +86,12 @@ class DBStorageManager(object):
         self.conn.commit()
 
     def del_list(self, lst_name): 
+        # delete tasks on this list
+        self.cursor.execute(
+            "DELETE FROM tasks WHERE list_name = ?",
+            (lst_name, )
+        )
+        # delete list
         self.cursor.execute(
             """
             DELETE FROM lists WHERE name = ?
@@ -100,19 +113,18 @@ class DBStorageManager(object):
         pass
 
     def viewtasks(self, list_name=None): 
-        query = """ SELECT description, date, time, list_name 
+        query = """ SELECT id, description, date, time, list_name 
                     FROM tasks where completed = 0 """
         if list_name is not None: 
-            query += "&& list_name = {}".format(list_name)
+            query += "AND list_name = \"{}\"".format(list_name)
         tasks = self.cursor.execute(query)
         return list(tasks)
 
-    def viewalltasks(self): 
-        tasks = self.cursor.execute(
-            """
-            SELECT * FROM tasks
-            """
-        )
+    def viewalltasks(self, list_name=None): 
+        query = "SELECT * FROM tasks"
+        if list_name is not None: 
+            query += " WHERE list_name = \"{}\"".format(list_name)
+        tasks = self.cursor.execute(query)
         return list(tasks)
 
     def viewlists(self): 

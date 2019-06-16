@@ -2,6 +2,7 @@
 
 from storage_manager import DBStorageManager
 from sys import stdin
+from datetime import date, time
 
 class App(object): 
     """
@@ -40,26 +41,55 @@ class App(object):
 
             # run the cmd
             if cmd in self.NEW_TASK_CMDS: 
-                self.storage_manager.add_task(tokens[1], tokens[2], tokens[3], 
+                if len(tokens) != 5: 
+                    print("Usage: nt description date time list_name")
+                    continue
+                if not self.validate_date(tokens[2]): 
+                    continue
+                elif not self.validate_time(tokens[3]):
+                    continue
+                self.storage_manager.create_task(tokens[1], tokens[2], tokens[3], 
                     tokens[4])
             elif cmd in self.NEW_LIST_CMDS: 
+                if len(tokens) != 3: 
+                    print("Usage: nl name priority")
+                    continue
+                if self._safe_int(tokens[2]) is None: 
+                    continue
                 self.storage_manager.create_list(tokens[1], tokens[2])
             elif cmd in self.DEL_TASK_CMDS: 
+                if len(tokens) != 2: 
+                    print("Usage: dt task_id")
+                    continue 
                 self.storage_manager.del_task(tokens[1])
             elif cmd in self.DEL_LIST_CMDS: 
+                if len(tokens) != 2: 
+                    print("Usage: dl list_name")
+                    continue 
                 self.storage_manager.del_list(tokens[1])
             elif cmd in self.COMPLETE_CMDS: 
+                if len(tokens) != 2: 
+                    print("Usage: c task_id")
+                    continue 
                 self.storage_manager.complete(tokens[1])
             elif cmd in self.PRIORITIZE_CMDS: 
                 tasks = self.storage_manager.prioritize()
                 for task in tasks: 
                     print(task)
             elif cmd in self.VIEW_TASKS_CMDS: 
-                tasks = self.storage_manager.viewtasks()
+                tasks = []
+                if len(tokens) == 2: 
+                    tasks = self.storage_manager.viewtasks(tokens[1])
+                else: 
+                    tasks = self.storage_manager.viewtasks()
                 for task in tasks: 
                     print(task)
             elif cmd in self.VIEW_ALLTASKS_CMDS: 
-                tasks = self.storage_manager.viewalltasks()
+                tasks = []
+                if len(tokens) == 2: 
+                    tasks = self.storage_manager.viewalltasks(tokens[1])
+                else: 
+                    tasks = self.storage_manager.viewalltasks()
                 for task in tasks: 
                     print(task)
             elif cmd in self.VIEW_LISTS_CMDS: 
@@ -70,6 +100,75 @@ class App(object):
                 return 
             else: 
                 print("Invalid command entered!")
+
+
+    # ====================== Helper methods ===================================
+    def _safe_int(self, num):
+        """
+        Converts the given string into an integer. Returns None if num is not a
+        valid integer.
+        """
+        integer = None
+        try: 
+            integer = int(num)
+        except ValueError as e: 
+            print("{} is not a valid number".format(num))
+        return integer
+
+    def validate_date(self, date_token): 
+        """
+        Ensures that dates take the form MM/DD/YYYY because the db does not.
+        """
+        # ensure each part of date is numeric
+        date_elems = date_token.split("/")
+        if len(date_elems) != 3:
+            print("Date must be specified as MM/DD/YYYY")
+            return False
+
+        month = self._safe_int(date_elems[0])
+        if not month:
+            return False 
+        day = self._safe_int(date_elems[1])
+        if not day: 
+            return False 
+        year = self._safe_int(date_elems[2])
+        if not year: 
+            return False 
+
+        # try to create a date object
+        try: 
+            date(year, month, day)
+        except ValueError as e: 
+            print("{} is not a valid date".format(date_token))
+            return False
+
+        return True
+
+    def validate_time(self, time_token): 
+        """
+        Ensures that times take the form HH:MM because the db does not.
+        """
+        # ensure each part of time is numeric
+        time_elems = time_token.split(":")
+        if len(time_elems) != 2:
+            print("Time must be specified in 24 hour format: HH:MM")
+            return False 
+
+        hour = self._safe_int(time_elems[0])
+        if hour is None: 
+            return False 
+        minutes = self._safe_int(time_elems[1])
+        if minutes is None: 
+            return False 
+
+        # try to create a time object
+        try: 
+            time(hour, minutes)
+        except ValueError as e: 
+            print("{} is not a valid time".format(time_token))
+            return False 
+
+        return True
 
     def tokenize_input(self, string):
         """
