@@ -73,11 +73,7 @@ class App(object):
                     continue 
                 self.storage_manager.complete(tokens[1])
             elif cmd in self.PRIORITIZE_CMDS: 
-                tasks = self.storage_manager.viewtasks()
-                tasks = [(task_id, description, self.convert_date(d), 
-                    self.convert_time(t), list_name) 
-                    for task_id, description, d, t, list_name in tasks]
-                tasks = sorted(tasks, key=lambda x: (x[2], x[3]))
+                tasks = self.storage_manager.prioritize()
                 for task in tasks: 
                     print(task)
             elif cmd in self.VIEW_TASKS_CMDS: 

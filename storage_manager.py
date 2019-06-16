@@ -131,3 +131,6 @@ class DBStorageManager(object):
             """
         )
         return list(lists)
+
+    def prioritize(self): 
+        pass

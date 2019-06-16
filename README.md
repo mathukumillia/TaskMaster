@@ -90,7 +90,7 @@ You can see all uncompleted tasks by running:
 ```
 >> vt
 ```
-Once again, you can filter out uncompleted tasks from a particular list by 
+Once again, you can filter for uncompleted tasks in a particular list by 
 running: 
 ``` 
 >> vt list_name
