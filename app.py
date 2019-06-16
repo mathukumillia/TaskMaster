@@ -44,9 +44,9 @@ class App(object):
                 if len(tokens) != 5: 
                     print("Usage: nt description date time list_name")
                     continue
-                if not self.validate_date(tokens[2]): 
+                if self.convert_date(tokens[2]) is None: 
                     continue
-                elif not self.validate_time(tokens[3]):
+                elif self.convert_time(tokens[3]) is None:
                     continue
                 self.storage_manager.create_task(tokens[1], tokens[2], tokens[3], 
                     tokens[4])
@@ -73,7 +73,11 @@ class App(object):
                     continue 
                 self.storage_manager.complete(tokens[1])
             elif cmd in self.PRIORITIZE_CMDS: 
-                tasks = self.storage_manager.prioritize()
+                tasks = self.storage_manager.viewtasks()
+                tasks = [(task_id, description, self.convert_date(d), 
+                    self.convert_time(t), list_name) 
+                    for task_id, description, d, t, list_name in tasks]
+                tasks = sorted(tasks, key=lambda x: (x[2], x[3]))
                 for task in tasks: 
                     print(task)
             elif cmd in self.VIEW_TASKS_CMDS: 
@@ -115,7 +119,7 @@ class App(object):
             print("{} is not a valid number".format(num))
         return integer
 
-    def validate_date(self, date_token): 
+    def convert_date(self, date_token): 
         """
         Ensures that dates take the form MM/DD/YYYY because the db does not.
         """
@@ -123,28 +127,26 @@ class App(object):
         date_elems = date_token.split("/")
         if len(date_elems) != 3:
             print("Date must be specified as MM/DD/YYYY")
-            return False
+            return None
 
         month = self._safe_int(date_elems[0])
         if not month:
-            return False 
+            return None
         day = self._safe_int(date_elems[1])
         if not day: 
-            return False 
+            return None
         year = self._safe_int(date_elems[2])
-        if not year: 
-            return False 
+        if year is None: 
+            return None
 
         # try to create a date object
         try: 
-            date(year, month, day)
+            return date(year, month, day)
         except ValueError as e: 
             print("{} is not a valid date".format(date_token))
-            return False
+            return None
 
-        return True
-
-    def validate_time(self, time_token): 
+    def convert_time(self, time_token): 
         """
         Ensures that times take the form HH:MM because the db does not.
         """
@@ -152,23 +154,21 @@ class App(object):
         time_elems = time_token.split(":")
         if len(time_elems) != 2:
             print("Time must be specified in 24 hour format: HH:MM")
-            return False 
+            return None
 
         hour = self._safe_int(time_elems[0])
         if hour is None: 
-            return False 
+            return None
         minutes = self._safe_int(time_elems[1])
         if minutes is None: 
-            return False 
+            return None
 
         # try to create a time object
         try: 
-            time(hour, minutes)
+            return time(hour, minutes)
         except ValueError as e: 
             print("{} is not a valid time".format(time_token))
-            return False 
-
-        return True
+            return None
 
     def tokenize_input(self, string):
         """

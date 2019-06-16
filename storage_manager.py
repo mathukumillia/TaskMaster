@@ -109,9 +109,6 @@ class DBStorageManager(object):
         )
         self.conn.commit()
 
-    def prioritize(self):
-        pass
-
     def viewtasks(self, list_name=None): 
         query = """ SELECT id, description, date, time, list_name 
                     FROM tasks where completed = 0 """
