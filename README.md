@@ -45,7 +45,7 @@ Tasks are assigned IDs automatically by sqlite.
 
 Tasks are initialized as unfinished. Once you've completed a task, you can run:
 ```
-c task_id
+>> c task_id
 ```
 
 ### Deleting a Task
@@ -54,14 +54,14 @@ In general, you probably don't want to delete tasks, because you'll want to
 keep track of your progress. If, however, you really need to delete a task, 
 you can run: 
 ```
-dt task_id
+>> dt task_id
 ```
 
 ### Deleting a List
 
 Deleting an entire list deletes all of the tasks on that list as well: 
 ```
-dl list_name
+>> dl list_name
 ```
 
 ### Prioritizing
@@ -71,7 +71,7 @@ and sorts them by nearest completion date and priority. It essentially gives
 you a todo list ranked by deadline and weighted by priority. To generate this 
 todo list, just run: 
 ```
-p
+>> p
 ```
 
 ### Viewing Tasks
@@ -79,26 +79,26 @@ p
 You can view tasks in several different ways. If you want to see all tasks, 
 completed and uncompleted, you can run: 
 ```
-vat
+>> vat
 ```
 If you want to see all tasks, completed and uncompleted, from a particular list,
 you can run: 
 ```
-vat list_name
+>> vat list_name
 ```
 You can see all uncompleted tasks by running: 
 ```
-vt
+>> vt
 ```
 Once again, you can filter out uncompleted tasks from a particular list by 
 running: 
 ``` 
-vt list_name
+>> vt list_name
 ```
 
 ### Viewing Lists
 
 Finally, you can see all of the lists you have by running: 
 ```
-vl
+>> vl
 ```
