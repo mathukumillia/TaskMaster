@@ -1,181 +1,117 @@
-import os.path
-from task import Task
-from list_manager import List
-from datetime import date, time
+import sqlite3
 
-class StorageManager(object): 
+class DBStorageManager(object): 
     """
-    An abstract class describing what a storage manager must be able to support. 
-    Should not be instantiated.
+    Manages persistent storage in the task planner by reading/writing to/from 
+    a sqlite database.
     """
-    def add_list(self, lst): 
-        """
-        Adds a list to the stored list of lists.
-        """
-        raise NotImplementedError
+    def __init__(self): 
+        # establish database connection 
+        self.conn = sqlite3.connect("taskplanner.db")
+        self.cursor = self.conn.cursor()
 
-    def remove_list(self, lst): 
-        """
-        Removes a list from the stored list of lists.
-        """
-        raise NotImplementedError
-
-    def load_lists(self):
-        """
-        Loads the map of list names to lists into the application. 
-        """
-        raise NotImplementedError 
-
-    def load_tasks(self): 
-        """
-        Loads all of the tasks into the application as a map of task ids to 
-        tasks
-        """
-        raise NotImplementedError
-
-    def add_task(self, task): 
-        """
-        Adds a task to the stored list of tasks.
-        """
-        raise NotImplementedError
-
-    def remove_task(self, task_id): 
-        """
-        Removes a task from the stored list of tasks.
-        """
-        raise NotImplementedError
-
-    def mark_task_completed(self, task_id): 
-        """
-        Marks a task as completed in storage.
-        """
-        raise NotImplementedError
-
-class FileStorageManager(StorageManager): 
-    """
-    Uses raw text files as the backing store for this application. This is 
-    probably not the best option, but it's good for small use cases and tests
-    """
-    def __init__(self, root): 
-        self.root = root
-        self.list_file = self.root + "/lists.txt"
-        self.task_file = self.root + "/tasks.txt"
-        self.num_tasks = 0
-
-        # create all of the necessary storage files if they don't exist
-        # list file
-        if not os.path.exists(self.list_file): 
-            with open(self.list_file, "w") as f:
-                f.write("tasks\n");
-
-        # task file
-        if not os.path.exists(self.task_file): 
-            with open(self.task_file, "w") as f: 
-                pass
-
-    def add_list(self, lst): 
-        """
-        Adds a list to the stored list of lists.
-        """
-        with open(self.list_file, "a") as f: 
-            f.write(lst.get_name() + "\t" + str(lst.get_priority()) + "\n")
-
-    def remove_list(self, lst): 
-        """
-        Removes a list from the stored list of lists, and then removes all 
-        tasks associated with this list.
-        """
-        # remove list
-        lines = None
-        with open(self.list_file, "r") as f: 
-            lines = f.readlines()
-        with open(self.list_file, "w") as f: 
-            for line in lines: 
-                elements = line.strip().split("\t")
-                if elements[0] != lst.get_name():
-                    f.write(line)
-
-        # remove associated tasks
-        lines = None 
-        with open(self.task_file, "r") as f: 
-            lines = f.readlines()
-        with open(self.task_file, "w") as f: 
-            for line in lines: 
-                elements = line.split("\t")
-                if elements[4] != lst: 
-                    f.write(line)
-
-
-    def load_lists(self):
-        """
-        Loads the map of list names to lists into the application. 
-        """
-        list_map = {}
-        with open(self.list_file, "r") as f: 
-            for line in f: 
-                elements = line.strip().split("\t")
-                list_map[elements[0]] = List(elements[0], int(elements[1]))
-        return list_map
-
-    def load_tasks(self, list_manager): 
-        """
-        Loads all of the tasks into the application as a map of task ids to 
-        tasks
-        """
-        task_map = {}
-        with open(self.task_file, "r") as f: 
-            for line in f: 
-                elements = line.split("\t")
-
-                # create the date object
-                date_elems = [int(elem) for elem in elements[2].split("-")]
-                time_elems = [int(elem) for elem in elements[3].split(":")]
-                task_map[int(elements[0])] = Task(
-                    elements[0],
-                    elements[1], 
-                    date(date_elems[0], date_elems[1], date_elems[2]),
-                    time(time_elems[0], time_elems[1], time_elems[2]),
-                    list_manager.get_lst(elements[4]),
+        # create tables if they don't exist
+        existing_tables = self.cursor.execute(
+            """
+            SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
+            """
+        )
+        existing_tables = [tup[0] for tup in list(existing_tables)]
+        if "lists" not in existing_tables: 
+            self.cursor.execute(
+                """
+                CREATE TABLE lists (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    priority INTEGER NOT NULL
                 )
-                if elements[5].strip() == "True":
-                    task_map[int(elements[0])].mark_completed()
-                if int(elements[0]) >= self.num_tasks:
-                    self.num_tasks = int(elements[0]) + 1
-        return task_map
+                """
+            )
+        if "tasks" not in existing_tables: 
+            self.cursor.execute(
+                """
+                CREATE TABLE tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                    description TEXT NOT NULL,
+                    date TEXT NOT NULL,
+                    time TEXT NOT NULL,
+                    list_name TEXT NOT NULL,
+                    completed INTEGER NOT NULL,
+                    FOREIGN KEY (list_name) REFERENCES lists(name)
+                )
+                """
+            )
 
-    def add_task(self, task): 
-        """
-        Adds a task to the stored list of tasks.
-        """
-        task.set_id(self.num_tasks)
-        with open(self.task_file, "a") as f: 
-            f.write(str(task))
-        self.num_tasks += 1
+    def add_task(self, description, date, time, list_name): 
+        self.cursor.execute(
+            """
+            INSERT INTO tasks (description, date, time, list_name, completed)
+            VALUES (?, ?, ?, ?, 0)
+            """,
+            (description, date, time, list_name)
+        )
+        self.conn.commit()
 
-    def mark_task_completed(self, task_id): 
-        """
-        Marks a task as completed in storage.
-        """
-        lines = None
-        with open(self.task_file, "r") as f: 
-            lines = f.readlines()
-        with open(self.task_file, "w") as f: 
-            for line in lines: 
-                elements = line.split("\t")
-                if int(elements[0]) != task_id: 
-                    f.write(line)
-                else: 
-                    f.write("\t".join(elements[:5]) + "\t" + str(True) + "\n")
+    def create_list(self, name, priority): 
+        self.cursor.execute(
+            """
+            INSERT INTO lists (name, priority)
+            VALUES (?, ?)
+            """,
+            (name, priority)
+        )
+        self.conn.commit()
 
-    def remove_task(self, task_id): 
-        """
-        Removes a task from the stored list of tasks.
-        """
-        lines = None
-        with open(self.task_file, "r") as f: 
-            lines = f.readlines()
-        with open(self.task_file, "w") as f: 
-            for line in lines: 
-                line_id = int(line.split("\t")[0])
-                if line_id != task_id: 
-                    f.write(line)       
+    def del_task(self, task_id): 
+        self.cursor.execute(
+            """
+            DELETE FROM tasks WHERE id = ?
+            """,
+            (task_id, )
+        )
+        self.conn.commit()
+
+    def del_list(self, lst_name): 
+        self.cursor.execute(
+            """
+            DELETE FROM lists WHERE name = ?
+            """,
+            (lst_name, )
+        )
+        self.conn.commit()
+
+    def complete(self, task_id): 
+        self.cursor.execute(
+            """
+            UPDATE tasks SET completed = 1 WHERE id = ?
+            """,
+            (task_id, )
+        )
+        self.conn.commit()
+
+    def prioritize(self):
+        pass
+
+    def viewtasks(self): 
+        tasks = self.cursor.execute(
+            """
+            SELECT * FROM tasks WHERE completed = 0
+            """
+        )
+        return list(tasks)
+
+    def viewalltasks(self): 
+        tasks = self.cursor.execute(
+            """
+            SELECT * FROM tasks
+            """
+        )
+        return list(tasks)
+
+    def viewlists(self): 
+        lists = self.cursor.execute(
+            """
+            SELECT * FROM lists
+            """
+        )
+        return list(lists)
