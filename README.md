@@ -66,10 +66,12 @@ Deleting an entire list deletes all of the tasks on that list as well:
 
 ### Prioritizing
 
-The prioritizing feature searches through all of the tasks on all of your lists
-and sorts them by nearest completion date and priority. It essentially gives 
-you a todo list ranked by deadline and weighted by priority. To generate this 
-todo list, just run: 
+The prioritizing feature searches through all of the tasks on all of your lists, 
+determines the number of seconds until each task must be completed, divides 
+this duration by the priority, and sorts the result in ascending order. This 
+gives you a weighted todo list that takes into account both the closeness of the 
+deadline and the priority of the list that task belongs to. To generate this 
+list, run: 
 ```
 >> p
 ```

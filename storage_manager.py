@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, date, time
 
 class DBStorageManager(object): 
     """
@@ -9,6 +10,9 @@ class DBStorageManager(object):
         # establish database connection 
         self.conn = sqlite3.connect("taskplanner.db")
         self.cursor = self.conn.cursor()
+
+        # the basal time stamp 
+        self.base_time = datetime(2015, 1, 1)
 
         # enable foreign keys
         self.cursor.execute(
@@ -42,6 +46,7 @@ class DBStorageManager(object):
                     description TEXT NOT NULL,
                     date TEXT NOT NULL,
                     time TEXT NOT NULL,
+                    sec_from_base INTEGER NOT NULL,
                     list_name TEXT NOT NULL,
                     completed INTEGER NOT NULL,
                     FOREIGN KEY (list_name) REFERENCES lists(name)
@@ -50,13 +55,18 @@ class DBStorageManager(object):
             )
 
     def create_task(self, description, date, time, list_name): 
+        # compute the time delta from the basal time stamp 
+        task_dt = datetime.combine(date, time)
+        delta = task_dt - self.base_time
         try: 
             self.cursor.execute(
                 """
-                INSERT INTO tasks (description, date, time, list_name, completed)
-                VALUES (?, ?, ?, ?, 0)
+                INSERT INTO tasks 
+                (description, date, time, sec_from_base, list_name, completed)
+                VALUES (?, ?, ?, ?, ?, 0)
                 """,
-                (description, date, time, list_name)
+                (description, str(date), str(time), delta.total_seconds(), 
+                    list_name)
             )
             self.conn.commit()
         except sqlite3.IntegrityError as e: 
@@ -111,14 +121,15 @@ class DBStorageManager(object):
 
     def viewtasks(self, list_name=None): 
         query = """ SELECT id, description, date, time, list_name 
-                    FROM tasks where completed = 0 """
+                    FROM tasks WHERE completed = 0 """
         if list_name is not None: 
             query += "AND list_name = \"{}\"".format(list_name)
         tasks = self.cursor.execute(query)
         return list(tasks)
 
     def viewalltasks(self, list_name=None): 
-        query = "SELECT * FROM tasks"
+        query = """ SELECT id, description, date, time, list_name, 
+                    completed FROM tasks"""
         if list_name is not None: 
             query += " WHERE list_name = \"{}\"".format(list_name)
         tasks = self.cursor.execute(query)
@@ -133,4 +144,11 @@ class DBStorageManager(object):
         return list(lists)
 
     def prioritize(self): 
-        pass
+        tasks = self.cursor.execute(
+            """
+            SELECT tasks.id, description, date, time, list_name, priority
+            FROM tasks INNER JOIN lists ON lists.name = tasks.list_name 
+            WHERE completed = 0 ORDER BY sec_from_base/priority ASC
+            """
+        )
+        return list(tasks)

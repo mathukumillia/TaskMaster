@@ -44,12 +44,13 @@ class App(object):
                 if len(tokens) != 5: 
                     print("Usage: nt description date time list_name")
                     continue
-                if self.convert_date(tokens[2]) is None: 
+                dte = self.convert_date(tokens[2]) 
+                if dte is None: 
                     continue
-                elif self.convert_time(tokens[3]) is None:
+                tme = self.convert_time(tokens[3]) 
+                if tme is None:
                     continue
-                self.storage_manager.create_task(tokens[1], tokens[2], tokens[3], 
-                    tokens[4])
+                self.storage_manager.create_task(tokens[1], dte, tme, tokens[4])
             elif cmd in self.NEW_LIST_CMDS: 
                 if len(tokens) != 3: 
                     print("Usage: nl name priority")
